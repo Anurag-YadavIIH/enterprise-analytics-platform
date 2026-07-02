@@ -9,10 +9,10 @@ from eap.quality.validate import (
 )
 
 __all__ = [
-    "all_suite_configs",
-    "build_suite_config",
     "CheckResult",
     "ValidationReport",
+    "all_suite_configs",
+    "build_suite_config",
     "validate_all",
     "validate_table",
 ]

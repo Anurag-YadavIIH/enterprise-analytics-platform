@@ -50,6 +50,5 @@ def test_ge_suite_config_shapes() -> None:
     assert "expect_column_values_to_not_be_null" in types
     assert "expect_column_values_to_be_unique" in types
     # review_score bounded 1..5
-    bounded = [e for e in cfg["expectations"]
-               if e["kwargs"].get("column") == "review_score"]
+    bounded = [e for e in cfg["expectations"] if e["kwargs"].get("column") == "review_score"]
     assert bounded and bounded[0]["kwargs"]["max_value"] == 5

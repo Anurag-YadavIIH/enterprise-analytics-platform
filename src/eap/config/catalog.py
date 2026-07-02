@@ -48,8 +48,11 @@ CATALOG: dict[str, TableSpec] = {
         name="order_items",
         csv_file="olist_order_items_dataset.csv",
         primary_key=("order_id", "order_item_id"),
-        foreign_keys={"order_id": "orders.order_id", "product_id": "products.product_id",
-                      "seller_id": "sellers.seller_id"},
+        foreign_keys={
+            "order_id": "orders.order_id",
+            "product_id": "products.product_id",
+            "seller_id": "sellers.seller_id",
+        },
         timestamp_columns=("shipping_limit_date",),
         numeric_columns=("price", "freight_value"),
         not_null_columns=("order_id", "product_id", "seller_id"),

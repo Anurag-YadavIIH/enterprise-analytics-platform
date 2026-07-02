@@ -13,11 +13,10 @@ Airflow quality DAG call because it is fast and has no external state.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
 
 import pandas as pd
 
-from eap.config import CATALOG, Settings, all_specs, get_settings
+from eap.config import CATALOG, Settings, TableSpec, all_specs, get_settings
 from eap.utils.io import read_parquet
 from eap.utils.logging import get_logger
 
@@ -59,7 +58,7 @@ def _load(table: str, settings: Settings) -> pd.DataFrame:
     return read_parquet(settings.processed_dir / f"{table}.parquet")
 
 
-def _check_not_null(df: pd.DataFrame, spec, report: ValidationReport) -> None:
+def _check_not_null(df: pd.DataFrame, spec: TableSpec, report: ValidationReport) -> None:
     for col in spec.not_null_columns:
         if col in df.columns:
             n_null = int(df[col].isna().sum())
@@ -71,7 +70,7 @@ def _check_not_null(df: pd.DataFrame, spec, report: ValidationReport) -> None:
             )
 
 
-def _check_primary_key(df: pd.DataFrame, spec, report: ValidationReport) -> None:
+def _check_primary_key(df: pd.DataFrame, spec: TableSpec, report: ValidationReport) -> None:
     if not spec.primary_key:
         return
     keys = list(spec.primary_key)
@@ -79,11 +78,13 @@ def _check_primary_key(df: pd.DataFrame, spec, report: ValidationReport) -> None
         report.add(spec.name, f"pk_present{keys}", False, "key column(s) missing")
         return
     dupes = int(df.duplicated(subset=keys).sum())
-    report.add(spec.name, f"pk_unique{keys}", dupes == 0, f"{dupes} duplicate keys" if dupes else "")
+    report.add(
+        spec.name, f"pk_unique{keys}", dupes == 0, f"{dupes} duplicate keys" if dupes else ""
+    )
 
 
 def _check_foreign_keys(
-    df: pd.DataFrame, spec, settings: Settings, report: ValidationReport
+    df: pd.DataFrame, spec: TableSpec, settings: Settings, report: ValidationReport
 ) -> None:
     for col, target in spec.foreign_keys.items():
         parent_table, parent_col = target.split(".")
@@ -103,20 +104,22 @@ def _check_foreign_keys(
         )
 
 
-def _check_timestamps(df: pd.DataFrame, spec, report: ValidationReport) -> None:
+def _check_timestamps(df: pd.DataFrame, spec: TableSpec, report: ValidationReport) -> None:
     for col in spec.timestamp_columns:
         if col in df.columns:
             is_dt = pd.api.types.is_datetime64_any_dtype(df[col])
             report.add(spec.name, f"timestamp_type[{col}]", is_dt, "" if is_dt else "not datetime")
 
 
-def _check_outliers(df: pd.DataFrame, spec, report: ValidationReport) -> None:
+def _check_outliers(df: pd.DataFrame, spec: TableSpec, report: ValidationReport) -> None:
     """Flag negative values in monetary/quantity columns as invalid outliers."""
     monetary = {"price", "freight_value", "payment_value"}
     for col in spec.numeric_columns:
         if col in monetary and col in df.columns:
             n_neg = int((df[col] < 0).sum())
-            report.add(spec.name, f"non_negative[{col}]", n_neg == 0, f"{n_neg} negatives" if n_neg else "")
+            report.add(
+                spec.name, f"non_negative[{col}]", n_neg == 0, f"{n_neg} negatives" if n_neg else ""
+            )
 
 
 def validate_table(table: str, settings: Settings | None = None) -> ValidationReport:
@@ -142,7 +145,9 @@ def validate_all(settings: Settings | None = None) -> ValidationReport:
         report.results.extend(sub.results)
     log.info("quality.validate_done", **report.summary())
     for failure in report.failed:
-        log.warning("quality.check_failed", table=failure.table, check=failure.check, detail=failure.detail)
+        log.warning(
+            "quality.check_failed", table=failure.table, check=failure.check, detail=failure.detail
+        )
     return report
 
 

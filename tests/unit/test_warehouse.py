@@ -14,8 +14,14 @@ def test_all_star_tables_exist(warehouse: Settings) -> None:
     finally:
         con.close()
     expected = {
-        "dim_customers", "dim_products", "dim_sellers", "dim_geography",
-        "dim_dates", "fact_orders", "fact_order_items", "fact_payments",
+        "dim_customers",
+        "dim_products",
+        "dim_sellers",
+        "dim_geography",
+        "dim_dates",
+        "fact_orders",
+        "fact_order_items",
+        "fact_payments",
         "fact_reviews",
     }
     assert expected.issubset(tables)
@@ -25,12 +31,10 @@ def test_all_star_tables_exist(warehouse: Settings) -> None:
 def test_fact_orders_metrics(warehouse: Settings) -> None:
     con = duckdb.connect(str(warehouse.duckdb_file), read_only=True)
     try:
-        n, gmv = con.execute(
-            """
+        n, gmv = con.execute("""
             SELECT (SELECT COUNT(*) FROM fact_orders),
                    (SELECT SUM(total_item_value) FROM fact_order_items)
-            """
-        ).fetchone()
+            """).fetchone()
     finally:
         con.close()
     assert n == 3
@@ -41,9 +45,7 @@ def test_fact_orders_metrics(warehouse: Settings) -> None:
 def test_dim_dates_covers_order_range(warehouse: Settings) -> None:
     con = duckdb.connect(str(warehouse.duckdb_file), read_only=True)
     try:
-        lo, hi, n = con.execute(
-            "SELECT MIN(date), MAX(date), COUNT(*) FROM dim_dates"
-        ).fetchone()
+        lo, hi, n = con.execute("SELECT MIN(date), MAX(date), COUNT(*) FROM dim_dates").fetchone()
     finally:
         con.close()
     assert str(lo) == "2018-01-05"

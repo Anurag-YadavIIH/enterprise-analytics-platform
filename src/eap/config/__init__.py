@@ -3,4 +3,4 @@
 from eap.config.catalog import CATALOG, LOAD_ORDER, TableSpec, all_specs
 from eap.config.settings import Settings, get_settings
 
-__all__ = ["CATALOG", "LOAD_ORDER", "TableSpec", "all_specs", "Settings", "get_settings"]
+__all__ = ["CATALOG", "LOAD_ORDER", "Settings", "TableSpec", "all_specs", "get_settings"]

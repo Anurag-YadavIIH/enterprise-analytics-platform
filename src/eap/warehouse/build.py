@@ -41,9 +41,7 @@ def _register_staging(con: duckdb.DuckDBPyConnection, processed_dir: Path) -> No
     for name in _STAGING_TABLES:
         path = processed_dir / f"{name}.parquet"
         if not path.exists():
-            raise FileNotFoundError(
-                f"Processed file missing: {path}. Run ingestion first."
-            )
+            raise FileNotFoundError(f"Processed file missing: {path}. Run ingestion first.")
         con.execute(
             f"CREATE OR REPLACE TABLE stg_{name} AS "
             f"SELECT * FROM read_parquet('{path.as_posix()}')"
@@ -169,6 +167,12 @@ FROM stg_order_reviews r;
 """
 
 
+def _count(con: duckdb.DuckDBPyConnection, table: str) -> int:
+    row = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()
+    assert row is not None, f"COUNT(*) on {table} returned no row"
+    return row[0]
+
+
 def build_warehouse(settings: Settings | None = None) -> Path:
     """Build (or rebuild) the DuckDB star schema. Returns the db file path."""
     settings = settings or get_settings()
@@ -182,7 +186,7 @@ def build_warehouse(settings: Settings | None = None) -> Path:
             _register_staging(con, settings.processed_dir)
             con.execute(_DDL)
             counts = {
-                t: con.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+                t: _count(con, t)
                 for t in (
                     "dim_customers",
                     "dim_products",

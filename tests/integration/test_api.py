@@ -14,10 +14,9 @@ from eap.config import Settings
 @pytest.fixture(scope="module")
 def client(warehouse: Settings):
     """TestClient wired to the session-scoped test warehouse."""
-    from fastapi.testclient import TestClient
-
     import api.db as api_db
     from api.main import create_app
+    from fastapi.testclient import TestClient
 
     # Point the API at the test warehouse (bypass cached global settings).
     original = api_db._warehouse_path
@@ -70,8 +69,9 @@ def test_orders_filters_and_404(client) -> None:
     shipped = client.get("/orders", params={"status": "shipped"}).json()
     assert [o["order_id"] for o in shipped] == ["o3"]
 
-    breakdown = {r["order_status"]: r["orders"]
-                 for r in client.get("/orders/status-breakdown").json()}
+    breakdown = {
+        r["order_status"]: r["orders"] for r in client.get("/orders/status-breakdown").json()
+    }
     assert breakdown == {"delivered": 2, "shipped": 1}
 
     assert client.get("/orders/ghost").status_code == 404

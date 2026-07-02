@@ -5,10 +5,10 @@ from eap.utils.logging import configure_logging, get_logger
 
 __all__ = [
     "configure_logging",
-    "get_logger",
-    "timer",
     "ensure_dir",
+    "get_logger",
     "human_bytes",
     "read_parquet",
+    "timer",
     "write_parquet",
 ]

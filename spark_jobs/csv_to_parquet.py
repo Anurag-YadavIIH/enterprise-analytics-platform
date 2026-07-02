@@ -38,8 +38,8 @@ def _clean(df: "DataFrame", spec: TableSpec) -> "DataFrame":
     # Trim strings, convert empty -> null
     for field in df.schema.fields:
         if isinstance(field.dataType, StringType):
-            col = F.trim(F.col(field.name))
-            df = df.withColumn(field.name, F.when(col == "", None).otherwise(col))
+            trimmed = F.trim(F.col(field.name))
+            df = df.withColumn(field.name, F.when(trimmed == "", None).otherwise(trimmed))
 
     # Timestamps
     for col in spec.timestamp_columns:
