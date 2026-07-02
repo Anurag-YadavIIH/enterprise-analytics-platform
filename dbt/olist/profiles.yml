@@ -1,0 +1,18 @@
+# Reference profile. Copy to ~/.dbt/profiles.yml or set DBT_PROFILES_DIR here.
+# Two targets: fast local DuckDB (default) and the Postgres warehouse.
+olist:
+  target: duckdb
+  outputs:
+    duckdb:
+      type: duckdb
+      path: "../../data/warehouse/olist.duckdb"
+      threads: 4
+    postgres:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', 'localhost') }}"
+      port: "{{ env_var('POSTGRES_PORT', '5432') | int }}"
+      user: "{{ env_var('POSTGRES_USER', 'analytics') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD', 'analytics') }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'olist') }}"
+      schema: analytics
+      threads: 4

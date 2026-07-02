@@ -1,0 +1,29 @@
+# =====================================================================
+# Airflow image with the eap package + dbt installed
+# =====================================================================
+FROM apache/airflow:2.9.1-python3.12
+
+USER root
+# The base image ships a packages.microsoft.com source (for mssql-tools,
+# which we don't use) whose Release file has been observed with a future
+# Valid-From timestamp on some CDN edges, making `apt-get update` fail
+# outright. Drop that one source rather than depend on its clock.
+RUN rm -f /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends curl git \
+    && rm -rf /var/lib/apt/lists/*
+USER airflow
+
+# Install the platform package so DAGs can `import eap` / call `eap` CLI.
+COPY --chown=airflow:root pyproject.toml README.md /opt/eap/
+COPY --chown=airflow:root src /opt/eap/src
+# eap's own dependencies pin sqlalchemy>=2.0, which clobbers Airflow 2.9.1's
+# own sqlalchemy<2.0 requirement and breaks its ORM models at import time
+# (TaskInstance uses legacy-style annotations SQLAlchemy 2.x rejects without
+# Mapped[]). Re-pin sqlalchemy back into Airflow's supported range afterwards.
+RUN pip install --no-cache-dir "/opt/eap[quality]" dbt-core dbt-duckdb \
+    && pip install --no-cache-dir "sqlalchemy>=1.4.36,<2.0"
+
+# Standalone bootstraps the metadata DB and creates the admin user
+# from _AIRFLOW_WWW_USER_USERNAME/_AIRFLOW_WWW_USER_PASSWORD env vars.
+CMD ["standalone"]

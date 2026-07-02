@@ -1,0 +1,79 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+wheels/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local tool downloads (e.g. portable JDK for Spark on Windows)
+.tools/
+
+# Local-machine port remaps (avoids clashing with other projects' containers)
+docker-compose.override.yml
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Data — never commit raw or generated data
+data/raw/*
+data/processed/*
+data/parquet/*
+data/warehouse/*
+!data/**/.gitkeep
+
+# Spark / Hadoop
+metastore_db/
+derby.log
+spark-warehouse/
+
+# dbt
+dbt/olist/target/
+dbt/olist/dbt_packages/
+dbt/olist/logs/
+.user.yml
+
+# Great Expectations
+gx/uncommitted/
+
+# Airflow
+airflow/logs/
+airflow/airflow.db
+airflow/airflow.cfg
+airflow/webserver_config.py
+standalone_admin_password.txt
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# IDEs / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

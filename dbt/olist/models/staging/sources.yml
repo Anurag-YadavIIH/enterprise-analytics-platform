@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Cleaned Parquet produced by the ingestion layer (data/processed)."
+    meta:
+      external_location: "read_parquet('{{ var('processed_dir') }}/{name}.parquet')"
+    tables:
+      - name: customers
+      - name: sellers
+      - name: products
+      - name: product_category_translation
+      - name: geolocation
+      - name: orders
+      - name: order_items
+      - name: order_payments
+      - name: order_reviews

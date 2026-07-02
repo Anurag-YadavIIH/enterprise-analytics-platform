@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "Customer dimension."
+    columns:
+      - name: customer_id
+        description: "Primary key."
+        data_tests: [unique, not_null]
+      - name: customer_unique_id
+        data_tests: [not_null]
+
+  - name: dim_products
+    description: "Product dimension with English category names."
+    columns:
+      - name: product_id
+        data_tests: [unique, not_null]
+
+  - name: dim_sellers
+    description: "Seller dimension."
+    columns:
+      - name: seller_id
+        data_tests: [unique, not_null]
+
+  - name: fact_orders
+    description: "Wide order fact, one row per order."
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: order_status
+        data_tests:
+          - accepted_values:
+              values: [delivered, shipped, canceled, unavailable, invoiced,
+                       processing, created, approved]
+
+  - name: fct_monthly_revenue
+    description: "Monthly delivered revenue KPI."
+    columns:
+      - name: order_month
+        data_tests: [unique, not_null]
+      - name: revenue
+
+  - name: fct_customer_rfm
+    description: "Customer RFM scores."
+    columns:
+      - name: customer_unique_id
+        data_tests: [unique, not_null]
+      - name: r_score
+        data_tests:
+          - accepted_values:
+              values: [1, 2, 3, 4, 5]
