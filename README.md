@@ -139,13 +139,16 @@ trigger, a transactional cancel procedure).
   reproducing on Windows; native execution hits a JDK 25 incompatibility and
   the lack of an official Windows `winutils.exe` distribution.
 - **18 dbt data tests** (unique/not-null/relationships/accepted-values) plus a
-  singular revenue test — `dbt build` finishes `PASS=37 ERROR=0`. *(Not
-  re-verified in this pass — see the summary in the task history for what was
-  actually re-run.)*
-- **All 78 SQL queries executed** against the warehouse as part of development.
-  *(Not re-verified in this pass.)*
+  singular revenue test, run against the real warehouse with
+  `DBT_PROFILES_DIR=. dbt build --target duckdb` from `dbt/olist` —
+  `PASS=37 ERROR=0` (1 seed, 8 table models, 10 views, 18 tests).
+- **All 78 SQL queries in `sql/queries/`** executed against the real DuckDB
+  warehouse (`python scripts/run_sql_library.py`) — 78/78 pass, 0 return zero
+  rows.
 - **CI** runs ruff, black, mypy, pytest with coverage, and `dbt parse` on
-  every push. *(Not re-verified in this pass.)*
+  every push. *(Runs on push; not re-executed locally in this pass — the
+  pytest suite, dbt build and SQL library above are the parts that were
+  re-verified here.)*
 
 ## 📊 Dashboards & BI
 

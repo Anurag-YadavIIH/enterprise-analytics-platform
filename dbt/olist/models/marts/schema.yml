@@ -31,13 +31,15 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('dim_customers')
-              field: customer_id
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
       - name: order_status
         data_tests:
           - accepted_values:
-              values: [delivered, shipped, canceled, unavailable, invoiced,
-                       processing, created, approved]
+              arguments:
+                values: [delivered, shipped, canceled, unavailable, invoiced,
+                         processing, created, approved]
 
   - name: fct_monthly_revenue
     description: "Monthly delivered revenue KPI."
@@ -54,4 +56,5 @@ models:
       - name: r_score
         data_tests:
           - accepted_values:
-              values: [1, 2, 3, 4, 5]
+              arguments:
+                values: [1, 2, 3, 4, 5]
