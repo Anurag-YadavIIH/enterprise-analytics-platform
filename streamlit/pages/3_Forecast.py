@@ -57,7 +57,7 @@ st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("Forecast values")
 st.dataframe(
-    fc.round(2).rename("forecast_revenue").reset_index(names="period"),
+    fc.round(2).rename("forecast_revenue").rename_axis("period").reset_index(),
     use_container_width=True,
     hide_index=True,
 )
