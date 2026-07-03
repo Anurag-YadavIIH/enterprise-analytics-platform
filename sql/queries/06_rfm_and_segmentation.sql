@@ -36,9 +36,12 @@ rfm AS (
     GROUP BY c.customer_unique_id
 )
 SELECT customer_unique_id, recency_days, frequency, ROUND(monetary, 2) AS monetary,
-       6 - NTILE(5) OVER (ORDER BY recency_days)            AS r_score,  -- lower recency = better
-       NTILE(5) OVER (ORDER BY frequency)                   AS f_score,
-       NTILE(5) OVER (ORDER BY monetary)                    AS m_score
+       -- customer_unique_id is a deterministic tie-breaker: recency/frequency/monetary
+       -- have heavy ties (e.g. most customers have frequency=1), and NTILE's tie
+       -- handling is otherwise unstable across runs without a fully-ordered key.
+       6 - NTILE(5) OVER (ORDER BY recency_days, customer_unique_id) AS r_score,  -- lower recency = better
+       NTILE(5) OVER (ORDER BY frequency, customer_unique_id)        AS f_score,
+       NTILE(5) OVER (ORDER BY monetary, customer_unique_id)         AS m_score
 FROM rfm
 ORDER BY monetary DESC
 LIMIT 25;
@@ -57,10 +60,11 @@ rfm AS (
     GROUP BY c.customer_unique_id
 ),
 scored AS (
+    -- customer_unique_id is a deterministic tie-breaker (see Q59 for why).
     SELECT customer_unique_id,
-           6 - NTILE(5) OVER (ORDER BY recency_days) AS r,
-           NTILE(5) OVER (ORDER BY frequency)        AS f,
-           NTILE(5) OVER (ORDER BY monetary)         AS m
+           6 - NTILE(5) OVER (ORDER BY recency_days, customer_unique_id) AS r,
+           NTILE(5) OVER (ORDER BY frequency, customer_unique_id)        AS f,
+           NTILE(5) OVER (ORDER BY monetary, customer_unique_id)         AS m
     FROM rfm
 )
 SELECT
@@ -87,8 +91,9 @@ WITH rfm AS (
     GROUP BY c.customer_unique_id
 ),
 scored AS (
+    -- customer_unique_id is a deterministic tie-breaker (see Q59 for why).
     SELECT customer_unique_id, monetary,
-           NTILE(5) OVER (ORDER BY monetary) AS m_quintile
+           NTILE(5) OVER (ORDER BY monetary, customer_unique_id) AS m_quintile
     FROM rfm
 )
 SELECT m_quintile,

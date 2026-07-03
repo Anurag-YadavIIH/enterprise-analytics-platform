@@ -71,12 +71,12 @@ Full diagrams: [docs/architecture.md](docs/architecture.md) ·
 │   ├── warehouse/        #   DuckDB star-schema builder
 │   └── cli.py            #   `eap` CLI (ingest / spark / warehouse / quality / pipeline)
 ├── spark_jobs/           # PySpark: CSV→Parquet + broadcast-join transforms
-├── sql/                  # DDL, indexes, views, procedures + 78-query library
-│   └── queries/          #   7 themed files, every query DuckDB+Postgres portable
+├── sql/                  # DDL, indexes, views, procedures + 87-query library
+│   └── queries/          #   8 themed files, every query DuckDB+Postgres portable
 ├── dbt/olist/            # staging → intermediate → marts, tests, seeds, macros
 ├── airflow/dags/         # master pipeline + ingestion/quality/reporting DAGs
 ├── api/                  # FastAPI service over the warehouse
-├── streamlit/            # Multi-page dashboard (overview/analytics/search/forecast)
+├── streamlit/            # Multi-page dashboard (overview/analytics/search/forecast/insights)
 ├── docker/               # Dockerfiles (api, streamlit, airflow)
 ├── tests/                # pytest unit + integration (25 tests)
 ├── docs/                 # architecture, ER, Power BI, Excel, API, Streamlit guides
@@ -106,7 +106,7 @@ make up
 No Kaggle account? Place the dataset zip in `data/raw/` — the downloader
 falls back to local extraction automatically.
 
-## 📚 The SQL library (78 queries)
+## 📚 The SQL library (87 queries)
 
 `sql/queries/` is an interview-grade library where every query states the
 business question it answers and runs unchanged on DuckDB **and** PostgreSQL:
@@ -120,6 +120,7 @@ business question it answers and runs unchanged on DuckDB **and** PostgreSQL:
 | `05_cohort_and_retention` | acquisition cohorts, M1 retention, churn proxy | Q48–Q57 |
 | `06_rfm_and_segmentation` | RFM scoring, named segments, cross-sell affinity | Q58–Q66 |
 | `07_abc_rolling_and_advanced` | ABC classes, rolling windows, pivots, funnels | Q67–Q78 |
+| `08_insights` | actionable insights: delivery-retention impact, freight profitability, RFM win-back list, cohort payback, geographic opportunity — each commented with the business question **and** the decision it informs | Q79–Q87 |
 
 Plus `sql/ddl/` (schema, indexes, views), `sql/dml/` (in-database load) and
 `sql/procedures/` (functions, a materialised-snapshot procedure, an audit
@@ -150,9 +151,14 @@ trigger, a transactional cancel procedure).
   singular revenue test, run against the real warehouse with
   `DBT_PROFILES_DIR=. dbt build --target duckdb` from `dbt/olist` —
   `PASS=37 ERROR=0` (1 seed, 8 table models, 10 views, 18 tests).
-- **All 78 SQL queries in `sql/queries/`** executed against the real DuckDB
-  warehouse (`python scripts/run_sql_library.py`) — 78/78 pass, 0 return zero
+- **All 87 SQL queries in `sql/queries/`** executed against the real DuckDB
+  warehouse (`python scripts/run_sql_library.py`) — 87/87 pass, 0 return zero
   rows.
+- **Insights page** (`streamlit/pages/4_Insights.py`) — 5 actionable
+  recommendations (delivery-retention impact, freight profitability, RFM
+  win-back list, cohort payback, geographic opportunity), each computed live
+  from the real warehouse and verified rendering end-to-end via a headless
+  browser.
 - **CI** runs ruff, black, mypy, pytest with coverage, and `dbt parse` on
   every push. *(Runs on push; not re-executed locally in this pass — the
   pytest suite, dbt build and SQL library above are the parts that were
@@ -161,7 +167,8 @@ trigger, a transactional cancel procedure).
 ## 📊 Dashboards & BI
 
 - **Streamlit** — KPI overview, category analytics, customer search with CSV
-  export, and a Holt-Winters revenue forecast. [Guide](docs/streamlit.md)
+  export, a Holt-Winters revenue forecast, and an actionable insights page
+  with quantified recommendations. [Guide](docs/streamlit.md)
 - **FastAPI** — 12 endpoints with typed schemas and Swagger docs. [Guide](docs/api.md)
 - **Power BI** — connection steps, relationship model and a DAX measure pack. [Guide](docs/powerbi.md)
 - **Excel** — Power Query over Parquet + pivot starter pack. [Guide](docs/excel.md)
@@ -184,10 +191,10 @@ trigger, a transactional cancel procedure).
 - Built an end-to-end ELT platform (Python 3.12, PySpark, dbt, Airflow,
   PostgreSQL/DuckDB) processing the 100k-order Olist dataset into a tested
   star schema with automated data-quality gates.
-- Designed a dimensional model (5 dimensions, 4 facts) and authored a
-  78-query analytical SQL library covering window functions, recursive CTEs,
-  cohort retention, RFM segmentation and ABC analysis, portable across DuckDB
-  and PostgreSQL.
+- Designed a dimensional model (5 dimensions, 4 facts) and authored an
+  87-query analytical SQL library covering window functions, recursive CTEs,
+  cohort retention, RFM segmentation, ABC analysis and decision-oriented
+  business insights, portable across DuckDB and PostgreSQL.
 - Shipped a FastAPI analytics service and a multi-page Streamlit dashboard
   over the warehouse, containerised the full stack with Docker Compose, and
   enforced quality with 25 pytest tests, 18 dbt tests and a GitHub Actions
