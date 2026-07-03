@@ -34,6 +34,14 @@ This platform turns the nine raw files into a governed star schema and serves
 those answers through SQL, an API, dashboards and BI tools — with data-quality
 gates so a bad load never reaches a report.
 
+## 📸 Screenshots
+
+| Streamlit — Overview | Streamlit — Analytics | Streamlit — Forecast |
+|---|---|---|
+| ![Streamlit overview page with KPI cards and revenue charts](docs/images/streamlit-overview.png) | ![Streamlit analytics page with category and geography breakdowns](docs/images/streamlit-analytics.png) | ![Streamlit revenue forecast page with Holt-Winters projection chart and forecast values table](docs/images/streamlit-forecast.png) |
+
+![FastAPI Swagger docs listing all API endpoints](docs/images/api-docs.png)
+
 ## 🏗 Architecture
 
 ```mermaid
