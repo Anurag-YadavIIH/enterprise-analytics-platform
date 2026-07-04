@@ -25,9 +25,35 @@ st.caption(
 
 try:
     aov = d.avg_order_value()
+    total_revenue = d.kpis()["total_revenue"]
+    dr = d.delivery_retention()
+    payback = d.payback_curve()
 except FileNotFoundError as exc:
     st.error(str(exc))
     st.stop()
+
+on_time = dr[dr["first_delivery_status"] == "on_time"].iloc[0]
+late = dr[dr["first_delivery_status"] == "late"].iloc[0]
+
+_banner_month0 = payback[payback["months_since_first_order"] == 0].iloc[0]
+_banner_ref = payback[payback["months_since_first_order"] <= 12].iloc[-1]
+_banner_pct_month0 = (
+    100 * _banner_month0["cumulative_revenue_per_customer"] / _banner_ref["cumulative_revenue_per_customer"]
+)
+
+st.info(
+    f"🔑 **Key finding:** Olist behaves like a near-pure single-purchase marketplace, not a "
+    f"retention business. **{_banner_pct_month0:.1f}%** of a customer's cumulative revenue "
+    f"(through month {int(_banner_ref['months_since_first_order'])}) is already realized in "
+    f"their very first purchase month (see Insight 4), and the repeat-purchase rate sits around "
+    f"**~3%** no matter how the first order went "
+    f"({on_time['repeat_rate_pct']:.2f}% on-time vs {late['repeat_rate_pct']:.2f}% late-delivered "
+    f"-- see Insight 1). In practice, customer LTV on this platform is essentially "
+    f"*first-order value*. Read everything below with that lens: this is an "
+    f"**acquisition-driven** business, not a retention-driven one -- the insights that follow "
+    f"are real, but several describe small effects at the margins of a structurally "
+    f"low-repeat platform, not levers that change that structure."
+)
 
 st.divider()
 
@@ -36,10 +62,7 @@ st.divider()
 # ---------------------------------------------------------------------------
 st.header("1. Does a late first delivery cost us repeat customers?")
 
-dr = d.delivery_retention()
 late_by_state = d.late_delivery_by_state()
-on_time = dr[dr["first_delivery_status"] == "on_time"].iloc[0]
-late = dr[dr["first_delivery_status"] == "late"].iloc[0]
 
 c1, c2 = st.columns([1, 1])
 with c1:
@@ -56,23 +79,28 @@ with c2:
 repeat_gap_pp = on_time["repeat_rate_pct"] - late["repeat_rate_pct"]
 missed_repeat_customers = late["customers"] * repeat_gap_pp / 100
 revenue_at_risk = missed_repeat_customers * aov
+revenue_at_risk_pct = 100 * revenue_at_risk / total_revenue
 top_states = ", ".join(late_by_state.head(5)["customer_state"])
 
 st.info(
     f"**So what?** Customers whose first order arrived late repeat-purchase at "
     f"{late['repeat_rate_pct']:.2f}% vs {on_time['repeat_rate_pct']:.2f}% for on-time "
-    f"customers -- a {repeat_gap_pp:.2f}-point gap. Applied to the "
-    f"{late['customers']:,} customers whose first delivery was late, that's roughly "
-    f"**{missed_repeat_customers:.0f} fewer repeat customers**, worth an estimated "
-    f"**R\\$ {revenue_at_risk:,.0f}** in forgone revenue at the site-wide average order "
-    f"value of R\\$ {aov:,.2f}.\n\n"
-    f"Note: average LTV is actually *higher* for late-first-order customers "
-    f"(R\\$ {late['avg_ltv']:,.2f} vs R\\$ {on_time['avg_ltv']:,.2f}) -- their first order tends "
-    f"to be bigger. The retention hit shows up in whether they come back at all, not in "
-    f"what they spend when they do.\n\n"
-    f"**Recommendation:** prioritize delivery-reliability fixes in **{top_states}** -- "
-    f"the states with the highest late-delivery rates "
-    f"({late_by_state.iloc[0]['late_pct']:.1f}% in {late_by_state.iloc[0]['customer_state']} alone)."
+    f"customers -- a real but small {repeat_gap_pp:.2f}-point gap on an already-low base "
+    f"(repeat purchase is rare here regardless of delivery, per the Key finding above). "
+    f"Applied to the {late['customers']:,} customers whose first delivery was late, that's an "
+    f"estimated **R\\$ {revenue_at_risk:,.0f}** in forgone revenue -- roughly "
+    f"**{revenue_at_risk_pct:.3f}% of total platform revenue**. In absolute terms this is minor.\n\n"
+    f"**The more interesting result:** average LTV is actually *higher* for late-first-order "
+    f"customers (R\\$ {late['avg_ltv']:,.2f} vs R\\$ {on_time['avg_ltv']:,.2f}) -- their first "
+    f"order tends to be bigger, plausibly because larger or heavier orders take longer to ship. "
+    f"The retention hit shows up only in whether they come back at all, not in what they spend "
+    f"when they do -- and even that hit is small.\n\n"
+    f"**Takeaway:** this doesn't build a strong revenue case for a delivery-speed initiative on "
+    f"its own -- the dollar impact above is minor next to total platform revenue. If delivery "
+    f"reliability is worth fixing, the stronger case is customer experience and review scores, "
+    f"not this estimate. For ops visibility, the states with the highest late-delivery rates are "
+    f"still **{top_states}** ({late_by_state.iloc[0]['late_pct']:.1f}% in "
+    f"{late_by_state.iloc[0]['customer_state']} alone)."
 )
 
 with st.expander("Late-delivery rate by state (states with < 30 delivered orders excluded)"):
@@ -116,7 +144,10 @@ st.info(
     f"avg freight R\\$ {freight_cat.iloc[0]['avg_freight']:.2f}). {margin_note}\n\n"
     f"**Recommendation:** for categories above the threshold, either fold freight into the "
     f"listed price (one number, no checkout surprise) or investigate the specific "
-    f"category/region combinations below for a targeted carrier-rate renegotiation."
+    f"category/region combinations below for a targeted carrier-rate renegotiation.\n\n"
+    f"**Limitation:** this is a null result at the national/category level -- freight is not a "
+    f"margin killer here overall. A regional deep-dive (the category x state table below) may "
+    f"tell a different story for specific corridors even where the category-wide average looks fine."
 )
 
 with st.expander("Freight burden by category x state (worst combinations, min. 20 items per cell)"):
@@ -150,7 +181,11 @@ st.info(
     f"**So what?** {len(filtered):,} customers across {' and '.join(segment_filter) or 'no segments'} "
     f"represent **R\\$ {filtered['monetary'].sum():,.0f}** in historical revenue that's gone quiet.\n\n"
     f"**Recommendation:** target this exact list with a win-back campaign this month -- it's "
-    f"a known, high-value audience (identified from actual past spend) rather than a cold list."
+    f"a known, high-value audience (identified from actual past spend) rather than a cold list.\n\n"
+    f"**Limitation:** this list identifies *who* to target based on historical value, not *who "
+    f"is likely to respond*. No win-back campaign has been run or tested against this platform's "
+    f"data, so expected response and reactivation rates are unknown -- treat the revenue figure "
+    f"above as the size of the opportunity, not a forecast of what a campaign will recover."
 )
 
 st.divider()
@@ -160,7 +195,6 @@ st.divider()
 # ---------------------------------------------------------------------------
 st.header("4. How long does a customer cohort take to mature?")
 
-payback = d.payback_curve()
 max_available = int(payback["months_since_first_order"].max())
 max_month = st.slider("Months to show", 3, max_available, min(12, max_available))
 view = payback[payback["months_since_first_order"] <= max_month]
@@ -187,8 +221,8 @@ st.info(
     f"at month 0 to R\\$ {final['cumulative_revenue_per_customer']:.2f} by month "
     f"{int(final['months_since_first_order'])}.\n\n"
     f"**In plain language:** cohorts don't really \"mature\" on this platform -- almost all "
-    f"the value from a customer is captured (or lost) at their first purchase, which lines up "
-    f"with the roughly 3% repeat-purchase rate seen in Insight 1.\n\n"
+    f"the value from a customer is captured (or lost) at their first purchase, which is the "
+    f"same pattern flagged in the Key finding above.\n\n"
     f"**Recommendation:** retention spend is better aimed at converting the *first* purchase "
     f"into a second one quickly (e.g. a timed post-purchase offer) than at long-horizon "
     f"loyalty programs -- there's little cohort revenue left to protect after month 0."
@@ -232,5 +266,28 @@ st.info(
     f"**So what?** {opp_note}\n\n"
     f"**Recommendation:** these states justify logistics investment (regional fulfillment "
     f"partners, carrier renegotiation) ahead of lower-value states with similarly slow "
-    f"delivery -- the revenue upside is already proven; delivery speed is the constraint."
+    f"delivery -- the revenue upside is already proven; delivery speed is the constraint.\n\n"
+    f"**Limitation:** this is a correlation, not a causal claim. Delivery days and revenue per "
+    f"customer are both plausibly driven by distance from Sao Paulo (the platform's hub), so "
+    f"\"fix delivery, capture more revenue\" is a hypothesis worth testing, not a proven lever."
 )
+
+st.divider()
+
+# ---------------------------------------------------------------------------
+# Data limitations
+# ---------------------------------------------------------------------------
+with st.expander("📋 Data limitations"):
+    st.markdown(
+        "- **Time window:** 2016-2018 only. There is no 2019+ data, so nothing here reflects "
+        "current platform performance or later shifts in Brazilian e-commerce.\n"
+        "- **Single marketplace:** this is Olist's own transaction data. There is no competitor "
+        "or external market data anywhere in this warehouse -- market share, addressable market "
+        "size, and competitive positioning cannot be assessed from what's here.\n"
+        "- **Incomplete final months:** the last ~2 months of the raw dataset (Sep-Oct 2018) "
+        "have sharply reduced order volume from incomplete data collection, not a real demand "
+        "drop -- see the Forecast page for how that's excluded from the revenue projection there.\n"
+        "- **Descriptive, not causal:** every finding above is a correlation or historical "
+        "pattern in Olist's data, not a controlled experiment. None of the recommendations "
+        "should be read as proven causal levers without further testing."
+    )
